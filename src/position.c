@@ -42,3 +42,27 @@ attackers_to(const Position *pos, Square sq, U64 occ)
        | (attacks_bb(  ROOK, sq, occ) & (pos->piece[  ROOK] | pos->piece[QUEEN]))
        | (attacks_bb(  KING, sq, occ) &  pos->piece[  KING]);
 }
+
+int
+is_legal(const Position *pos, Move m)
+{
+  Color us = pos->turn, them = !us;
+  Square ksq = pos->ksq[us];
+  Square from = from_sq(m), to = to_sq(m);
+  U64 from_bb = get_bitboard(from), to_bb = get_bitboard(to);
+  U64 occupancy = (~pos->empty ^ from_bb) | to_bb;
+  U64 enemies = pos->color[them] & ~to_bb;
+  
+  if (from == ksq)
+    return !(attackers_to(pos, to, ~pos->empty ^ from_bb) & enemies);
+
+  if (type_of(m) == EN_PASSANT) {
+    Square capsq = to - (us == WHITE ? -8 : 8);
+    occupancy ^= get_bitboard(capsq);
+  }
+  
+  return !((attacks_bb(BISHOP, ksq, occupancy) & 
+            enemies & (pos->piece[QUEEN] | pos->piece[BISHOP])))
+      && !((attacks_bb(  ROOK, ksq, occupancy) &
+            enemies & (pos->piece[QUEEN] | pos->piece[  ROOK])));
+}

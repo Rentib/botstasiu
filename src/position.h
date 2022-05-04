@@ -20,5 +20,6 @@ typedef struct {
 
 void print_position(const Position *pos);
 U64 attackers_to(const Position *pos, Square sq, U64 occ);
+int is_legal(const Position *pos, Move m);
 
 #endif /* __POSITION_H__ */
