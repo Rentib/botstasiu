@@ -169,6 +169,7 @@ print_position(const Position *pos)
   printf("    Castling:      %c%c%c%c\n", 
          pos->castle & 4 ? 'K' : '-', pos->castle & 1 ? 'Q' : '-',
          pos->castle & 8 ? 'k' : '-', pos->castle & 2 ? 'q' : '-');
+  printf("    Hash key:      %lx\n", pos->key);
 }
 
 void

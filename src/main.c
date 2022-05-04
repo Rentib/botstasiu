@@ -4,6 +4,7 @@
 #include "bitboards.h"
 #include "chesslib.h"
 #include "position.h"
+#include "uci.h"
 
 /* commonly used bitboards */
 const U64 FileABB = 0x0101010101010101ULL;
@@ -29,6 +30,8 @@ main(/* int argc, char *argv[] */)
 {
   initialise_bitboards();
   initialise_zobrist_keys();
+
+  uci_loop();
 
   delete_bitboards();
   return 0;
