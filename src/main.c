@@ -3,6 +3,7 @@
 
 #include "bitboards.h"
 #include "chesslib.h"
+#include "evaluate.h"
 #include "position.h"
 #include "uci.h"
 
@@ -32,6 +33,7 @@ main(/* int argc, char *argv[] */)
 
   initialise_bitboards();
   initialise_zobrist_keys();
+  initialise_evaluation();
 
   uci_loop();
 
