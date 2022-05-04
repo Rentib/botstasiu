@@ -5,7 +5,7 @@
 CC = cc
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -Wno-deprecated-declarations -Wno-implicit-fallthrough -Ofast
 
-REQ = bitboards misc position
+REQ = bitboards misc movegen position
 
 all: main
 
