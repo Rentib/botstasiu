@@ -28,6 +28,8 @@ const U64 Rank8BB = Rank7BB >> 8;
 int
 main(/* int argc, char *argv[] */)
 {
+  printf("Botstasiu alpha by Stanisław Bitner\n");
+
   initialise_bitboards();
   initialise_zobrist_keys();
 

@@ -16,9 +16,44 @@ search(Position *pos, int depth)
   printf("\n");
 }
 
+U64
+perft_help(Position *pos, int depth)
+{
+  if (depth == 0) return 1ULL;
+  Move *m, *last, move_list[256];
+  uint64_t nodes_searched = 0ULL;
+  last = generate_moves(ALL, move_list, pos);
+  if (depth == 1) {
+    for (m = move_list; m != last; m++)
+      nodes_searched += is_legal(pos, *m);
+  } else {
+    for (m = move_list; m != last; m++) {
+      if (!is_legal(pos, *m)) continue;
+      Position tmp = *pos;
+      do_move(&tmp, *m);
+      nodes_searched += perft_help(&tmp, depth - 1);
+    }
+  }
+  return nodes_searched;
+}
+
 void
 perft(Position *pos, int depth)
 {
+  uint64_t nodes_searched = 0ULL, cnt;
+  Move *m, *last, move_list[256];
+  int t = get_time(); /* start time */
+  last = generate_moves(ALL, move_list, pos);
+  for (m = move_list; m != last; m++) {
+    if (!is_legal(pos, *m)) continue;
+    Position tmp = *pos;
+    do_move(&tmp, *m);
+    cnt = perft_help(&tmp, depth - 1);
+    nodes_searched += cnt;
+    print_move(*m);
+    printf(": %lu\n", cnt);
+  }
+  printf("\nNodes searched: %lu (%dms)\n\n", nodes_searched, get_time() - t);
 }
 
 static const char *sq_to_str[] = {
