@@ -8,11 +8,91 @@
 #include "misc.h"
 #include "position.h"
 
+static inline void add_piece(Position *pos, PieceType pt, Color c, Square sq);
+static inline void rem_piece(Position *pos, PieceType pt, Color c, Square sq);
+static inline void add_enpas(Position *pos, Square sq);
+static inline void rem_enpas(Position *pos);
+static inline void update_castle(Position *pos, Square from, Square to);
+static inline void switch_turn(Position *pos);
+
+/* Numbers for & operation that update castle rights. */
+static const int update_castle_rights[64] = {
+  13, 15, 15, 15,  5, 15, 15,  7,
+  15, 15, 15, 15, 15, 15, 15, 15,
+  15, 15, 15, 15, 15, 15, 15, 15,
+  15, 15, 15, 15, 15, 15, 15, 15,
+  15, 15, 15, 15, 15, 15, 15, 15,
+  15, 15, 15, 15, 15, 15, 15, 15,
+  15, 15, 15, 15, 15, 15, 15, 15,
+  14, 15, 15, 15, 10, 15, 15, 11,
+};
+
 /* Zobrist keys. */
 static Key turnKey;
 static Key pieceKey[2][6][64]; /* [Color][PieceType][Square] */
 static Key enpasKey[8];        /* [File] */
 static Key castleKey[16];      /* [CastleMask] */
+
+/* Adds piece to the given square, assumes that nothing is there. */
+static inline void
+add_piece(Position *pos, PieceType pt, Color c, Square sq)
+{
+  U64 bb = get_bitboard(sq);
+  pos->board[sq]  = pt;
+  pos->color[c]  |= bb;
+  pos->piece[pt] |= bb;
+  pos->key       ^= pieceKey[c][pt][sq];
+}
+
+/* Removes piece from the given square, assumes that something is there. */
+static inline void
+rem_piece(Position *pos, PieceType pt, Color c, Square sq)
+{
+  U64 bb = get_bitboard(sq);
+  pos->board[sq]  = NONE;
+  pos->color[c]  ^= bb;
+  pos->piece[pt] ^= bb;
+  pos->key       ^= pieceKey[c][pt][sq];
+}
+
+/* Adds en passant. */
+static inline void
+add_enpas(Position *pos, Square sq)
+{
+  pos->en_passant = sq;
+  pos->key ^= enpasKey[sq & 7]; /* sq & 7 == sq % 7 (file of square) */
+}
+
+/* Removes en passant. */
+static inline void
+rem_enpas(Position *pos)
+{
+  if (pos->en_passant != SQ_NONE) {
+    pos->key ^= enpasKey[pos->en_passant & 7];
+    pos->en_passant = SQ_NONE;
+  }
+}
+
+static inline void
+update_castle(Position *pos, Square from, Square to)
+{
+  pos->key ^= castleKey[pos->castle];
+  pos->castle &= (update_castle_rights[from] & update_castle_rights[to]);
+  pos->key ^= castleKey[pos->castle];
+}
+
+static inline void
+switch_turn(Position *pos)
+{
+  pos->turn ^= 1;
+  pos->key  ^= turnKey;
+}
+
+void
+do_move(Position *pos, Move m)
+{
+
+}
 
 void
 initialise_zobrist_keys(void)

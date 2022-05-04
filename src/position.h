@@ -21,6 +21,7 @@ typedef struct {
   Key       key; /* zobrist hash of a position */
 } Position;
 
+void do_move(Position *pos, Move m);
 void initialise_zobrist_keys(void);
 void print_position(const Position *pos);
 U64 attackers_to(const Position *pos, Square sq, U64 occ);
