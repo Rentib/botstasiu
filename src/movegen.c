@@ -4,6 +4,12 @@
 #include "movegen.h"
 #include "position.h"
 
+static Move *generate_pawn_moves(GenType gt,
+                                 Move *move_list, Position *pos, U64 target);
+static Move *generate_piece_moves(PieceType pt,
+                                  Move *move_list, Position *pos, U64 target);
+static Move *generate_castle_moves(Move *move_list, Position *pos);
+
 static inline Move *
 make_promotions(Direction dir,
                 Move *move_list, Square to) {
@@ -96,6 +102,28 @@ generate_piece_moves(PieceType pt,
       *move_list++ = make_move(from, pop_lsb(&attacks));
   }
   return move_list;
+}
+
+static Move *
+generate_castle_moves(Move *move_list, Position *pos)
+{
+  Color us = pos->turn, them = !us;
+  Square ksq = pos->ksq[us];
+  U64 empty = pos->empty;
+
+  if(pos->castle & (1 << us)) { /* long castle */
+    if(get_bit(empty, ksq - 3) && get_bit(empty, ksq - 2) && get_bit(empty, ksq - 1)){
+      if(!(attackers_to(pos, ksq - 1, ~empty) & pos->color[them]))
+        *move_list++ = make_castle(ksq, ksq - 2);
+    }
+  }
+  if(pos->castle & (4 << us)) { /* short castle */
+    if(get_bit(empty, ksq + 1) && get_bit(empty, ksq + 2)){
+      if(!(attackers_to(pos, ksq + 1, ~empty) & pos->color[them]))
+        *move_list++ = make_castle(ksq, ksq + 2);
+    }
+  }
+	return move_list;
 }
 
 Move *
