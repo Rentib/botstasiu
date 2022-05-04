@@ -130,5 +130,24 @@ Move *
 generate_moves(GenType gt,
                Move *move_list, Position *pos)
 {
+  const Color us = pos->turn, them = !us;
+  const Square ksq = pos->ksq[us];
+  U64 empty = pos->empty;
+  U64 checkers = attackers_to(pos, ksq, ~empty) & pos->color[them];
+  U64 target = gt == QUIET    ?  pos->empty
+             : gt == CAPTURES ?  pos->color[them]
+                              : ~pos->color[us];
+  move_list = generate_piece_moves(KING, move_list, pos, target);
+  if (popcount(checkers) < 2) { /* if there are 2 checkers only king may move */
+    if (checkers)
+      target &= between_bb(ksq, get_square(checkers));
+    move_list = generate_pawn_moves(gt, move_list, pos, target);
+    move_list = generate_piece_moves(KNIGHT, move_list, pos, target);
+    move_list = generate_piece_moves(BISHOP, move_list, pos, target);
+    move_list = generate_piece_moves(  ROOK, move_list, pos, target);
+    move_list = generate_piece_moves( QUEEN, move_list, pos, target);
+  }
+  if (!checkers)
+    move_list = generate_castle_moves(move_list, pos);
   return move_list;
 }
