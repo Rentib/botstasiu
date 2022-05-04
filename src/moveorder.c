@@ -43,3 +43,15 @@ process_moves(Position *pos, Move *move_list, Move *last)
   }
   return move_list;
 }
+
+void
+sort_moves(Move *begin, Move *end)
+{
+  for (Move *m = begin, *p = begin + 1; p < end; p++) {
+    Move tmp = *p, *q;
+    *p = *++m;
+    for (q = m; q != begin && *(q - 1) < tmp; --q)
+      *q = *(q - 1);
+    *q = tmp;
+  }
+}

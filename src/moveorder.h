@@ -10,4 +10,7 @@
    returns pointer to last element of move_list. */
 Move *process_moves(Position *pos, Move *move_list, Move *last);
 
+/* Sorts moves by their values. */
+void sort_moves(Move *begin, Move *end);
+
 #endif /* __MOVEORDER_H__ */
