@@ -82,6 +82,22 @@ generate_pawn_moves(GenType gt,
   return move_list;
 }
 
+static Move *
+generate_piece_moves(PieceType pt,
+                      Move *move_list, Position *pos, U64 target)
+{
+  U64 pieces = pos->piece[pt] & pos->color[pos->turn];
+  U64 attacks;
+  Square from;
+  while (pieces) {
+    from = pop_lsb(&pieces);
+    attacks = attacks_bb(pt, from, ~pos->empty) & target;
+    while (attacks)
+      *move_list++ = make_move(from, pop_lsb(&attacks));
+  }
+  return move_list;
+}
+
 Move *
 generate_moves(GenType gt,
                Move *move_list, Position *pos)
