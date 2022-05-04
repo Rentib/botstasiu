@@ -171,6 +171,75 @@ print_position(const Position *pos)
          pos->castle & 8 ? 'k' : '-', pos->castle & 2 ? 'q' : '-');
 }
 
+void
+set_position(Position *pos, const char *fen)
+{
+  pos->color[WHITE] = pos->color[BLACK] = 0ULL;
+  for (PieceType pt = PAWN; pt <= KING; pt++)
+    pos->piece[pt] = 0ULL;
+  for (Square sq = SQ_A8; sq <= SQ_H1; sq++)
+    pos->board[sq] = NONE;
+  pos->turn = WHITE;
+  pos->ksq[WHITE] = pos->ksq[BLACK] = SQ_NONE;
+  pos->en_passant = SQ_NONE;
+  pos->castle = 0;
+  pos->key = 0ULL;
+
+  /* board */
+  for (Square sq = SQ_A8; sq <= SQ_H1; fen++) {
+    if (*fen == '/') {
+      continue;
+    } else if ('0' <= *fen && *fen <= '9') {
+      sq += *fen - '0';
+    } else {
+      char z = *fen | 32; /* lower case */
+      Color c = (z == *fen);
+      switch (z) {
+      case 'p': add_piece(pos,   PAWN, c, sq); break;
+      case 'n': add_piece(pos, KNIGHT, c, sq); break;
+      case 'b': add_piece(pos, BISHOP, c, sq); break;
+      case 'r': add_piece(pos,   ROOK, c, sq); break;
+      case 'q': add_piece(pos,  QUEEN, c, sq); break;
+      case 'k': add_piece(pos,   KING, c, sq); break;
+      }
+      sq++;
+    }
+  }
+  pos->empty = ~(pos->color[WHITE] | pos->color[BLACK]);
+  pos->ksq[WHITE] = get_square(pos->color[WHITE] & pos->piece[KING]);
+  pos->ksq[BLACK] = get_square(pos->color[BLACK] & pos->piece[KING]);
+
+  /* side */
+  pos->turn = *(++fen) == 'b';
+  if (pos->turn == BLACK)
+    pos->key ^= turnKey;
+  fen += 2;
+
+  /* castling rights */
+  while (*fen != ' ') {
+    switch (*fen++) {
+    case 'K': pos->castle |= 4; break;
+    case 'Q': pos->castle |= 1; break;
+    case 'k': pos->castle |= 8; break;
+    case 'q': pos->castle |= 2; break;
+    default: break;
+    }
+  }
+  pos->key ^= castleKey[pos->castle];
+
+  /* en passant */
+  if (*(++fen) != '-') {
+    File f = fen[0] - 'a';
+    Rank r = 8 - (fen[1] - '0');
+    add_enpas(pos, f + r * 8);
+  }
+
+  /* TODO */
+  /* fifty move rule */
+
+  /* full move count */
+}
+
 U64
 attackers_to(const Position *pos, Square sq, U64 occ)
 {

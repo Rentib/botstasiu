@@ -24,6 +24,7 @@ typedef struct {
 void do_move(Position *pos, Move m);
 void initialise_zobrist_keys(void);
 void print_position(const Position *pos);
+void set_position(Position *pos, const char *fen);
 U64 attackers_to(const Position *pos, Square sq, U64 occ);
 int is_legal(const Position *pos, Move m);
 
