@@ -31,3 +31,14 @@ print_position(const Position *pos)
          pos->castle & 4 ? 'K' : '-', pos->castle & 1 ? 'Q' : '-',
          pos->castle & 8 ? 'k' : '-', pos->castle & 2 ? 'q' : '-');
 }
+
+U64
+attackers_to(const Position *pos, Square sq, U64 occ)
+{
+  return (pawn_attacks_bb(WHITE, sq)  & pos->piece[PAWN] & pos->color[BLACK])
+       | (pawn_attacks_bb(BLACK, sq)  & pos->piece[PAWN] & pos->color[WHITE])
+       | (attacks_bb(KNIGHT, sq, occ) &  pos->piece[KNIGHT])
+       | (attacks_bb(BISHOP, sq, occ) & (pos->piece[BISHOP] | pos->piece[QUEEN]))
+       | (attacks_bb(  ROOK, sq, occ) & (pos->piece[  ROOK] | pos->piece[QUEEN]))
+       | (attacks_bb(  KING, sq, occ) &  pos->piece[  KING]);
+}
