@@ -3,6 +3,7 @@
 
 #include "bitboards.h"
 #include "chesslib.h"
+#include "position.h"
 
 /* commonly used bitboards */
 const U64 FileABB = 0x0101010101010101ULL;
@@ -27,6 +28,7 @@ int
 main(/* int argc, char *argv[] */)
 {
   initialise_bitboards();
+
   delete_bitboards();
   return 0;
 }
