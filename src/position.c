@@ -91,7 +91,46 @@ switch_turn(Position *pos)
 void
 do_move(Position *pos, Move m)
 {
+  const Color us = pos->turn, them = !us;
+  const Square from = from_sq(m), to = to_sq(m);
+  const PieceType pt = pos->board[from], captured = pos->board[to];
 
+  /* move is a capture */
+  if (captured != NONE)
+    rem_piece(pos, captured, them, to);
+
+  rem_piece(pos, pt, us, from);
+  add_piece(pos, pt, us, to);
+
+  rem_enpas(pos);
+
+  if (pt == PAWN) {
+    if (to - from == 16 || from - to == 16) {
+      add_enpas(pos, to + (us == WHITE ? 8 : -8));
+    } else if (type_of(m) == EN_PASSANT) {
+      rem_piece(pos, PAWN, them, to + (us == WHITE ? 8 : -8));
+    } else if (type_of(m) == PROMOTION) {
+      rem_piece(pos, PAWN, us, to);
+      add_piece(pos, promotion_type(m), us, to);
+    }
+  } else if (type_of(m) == CASTLE) { /* add rook move */
+    if (from < to) { /* short */
+      rem_piece(pos, ROOK, us, from + 3);
+      add_piece(pos, ROOK, us, from + 1);
+    } else { /* long */
+      rem_piece(pos, ROOK, us, from - 4);
+      add_piece(pos, ROOK, us, from - 1);
+    }
+  }
+  switch_turn(pos);
+  update_castle(pos, from, to);
+
+  if (pt == KING)
+    pos->ksq[us] = to;
+
+  pos->empty = ~(pos->color[WHITE] | pos->color[BLACK]);
+
+  /* TODO - 50 move rule, full move count */
 }
 
 void
