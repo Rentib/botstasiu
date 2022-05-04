@@ -28,6 +28,7 @@ int
 main(/* int argc, char *argv[] */)
 {
   initialise_bitboards();
+  initialise_zobrist_keys();
 
   delete_bitboards();
   return 0;

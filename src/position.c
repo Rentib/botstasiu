@@ -8,6 +8,26 @@
 #include "misc.h"
 #include "position.h"
 
+/* Zobrist keys. */
+static Key turnKey;
+static Key pieceKey[2][6][64]; /* [Color][PieceType][Square] */
+static Key enpasKey[8];        /* [File] */
+static Key castleKey[16];      /* [CastleMask] */
+
+void
+initialise_zobrist_keys(void)
+{
+  turnKey = rand_uint64();
+  for (Color c = WHITE; c <= BLACK; c++)
+    for (PieceType pt = PAWN; pt <= KING; pt++)
+      for (Square sq = SQ_A8; sq <= SQ_H1; sq++)
+        pieceKey[c][pt][sq] = rand_uint64();
+  for (File f = 0; f < 8; f++)
+    enpasKey[f] = rand_uint64();
+  for (int castle_mask = 0; castle_mask < 16; castle_mask++)
+    castleKey[castle_mask] = rand_uint64();
+}
+
 void
 print_position(const Position *pos)
 {
