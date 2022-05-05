@@ -93,7 +93,8 @@ do_move(Position *pos, Move m)
 {
   Color us = pos->turn, them = !us;
   Square from = from_sq(m), to = to_sq(m);
-  PieceType pt = pos->board[from], captured = pos->board[to];
+  PieceType pt = pos->board[from], 
+            captured = pos->board[to];
 
   /* move state to the next one */
   State *st = malloc(sizeof(State));
@@ -144,6 +145,47 @@ do_move(Position *pos, Move m)
 void
 undo_move(Position *pos, Move m)
 {
+  pos->key ^= castleKey[pos->st->castle];
+  switch_turn(pos);
+  Color us = pos->turn, them = !us;
+  Square from = from_sq(m), to = to_sq(m);
+  PieceType pt = type_of(m) == PROMOTION ? PAWN : pos->board[to],
+            captured = pos->st->captured;
+
+  if (pt == KING)
+    pos->ksq[us] = from;
+
+  if (pt == PAWN) {
+    if (to - from == 16 || from - to == 16) {
+      rem_enpas(pos);
+    } else if (type_of(m) == EN_PASSANT) {
+      add_piece(pos, PAWN, them, to + (us == WHITE ? 8 : -8));
+    } else if (type_of(m) == PROMOTION) {
+      rem_piece(pos, promotion_type(m), us, to);
+      add_piece(pos, PAWN, us, to);
+    }
+  } else if (type_of(m) == CASTLE) {
+    if (from < to) {
+      rem_piece(pos, ROOK, us, from + 1);
+      add_piece(pos, ROOK, us, from + 3);
+    } else {
+      rem_piece(pos, ROOK, us, from - 1);
+      add_piece(pos, ROOK, us, from - 4);
+    }
+  }
+
+  rem_piece(pos, pt, us, to);
+  add_piece(pos, pt, us, from);
+
+  if (captured != NONE)
+    add_piece(pos, captured, them, to);
+
+  State *st = pos->st->prev;
+  free(pos->st);
+  pos->st = st;
+  pos->key ^= castleKey[pos->st->castle];
+
+  pos->empty = ~(pos->color[WHITE] | pos->color[BLACK]);
 }
 
 void
@@ -189,6 +231,7 @@ void
 set_position(Position *pos, const char *fen)
 {
   pos->game_ply = 0;
+  free(pos->st);
   pos->st = malloc(sizeof(State));
   pos->st->prev = NULL;
   pos->st->captured = NONE;

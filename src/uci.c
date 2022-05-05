@@ -124,7 +124,7 @@ uci_position(Position *pos, char *input)
 void
 uci_loop(void)
 {
-  Position pos;
+  Position pos = (Position){ .st = NULL };
   set_position(&pos, startpos);
   setbuf(stdin,  NULL);
   setbuf(stdout, NULL);
@@ -155,5 +155,11 @@ uci_loop(void)
       break;
     else
       printf("Unknown command: %s", input);
+  }
+
+  while (pos.st) {
+    State *xd = pos.st->prev;
+    free(pos.st);
+    pos.st = xd;
   }
 }
