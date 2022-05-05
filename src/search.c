@@ -82,8 +82,13 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
     value = -negamax(pos, &new_pv, -beta, -alpha, depth - 1);
 
     undo_move(pos, *m);
-    if (value >= beta)
+    if (value >= beta) {
+      if (pos->board[to_sq(*m)] == NONE) { /* found killer */
+        pos->killer[1][pos->ply] = pos->killer[0][pos->ply];
+        pos->killer[0][pos->ply] = *m;
+      }
       return beta;
+    }
     if (value > alpha) {
       pv->m[0] = *m;
       pv->cnt = new_pv.cnt + 1;
@@ -104,6 +109,8 @@ search(Position *pos)
 
   pos->ply = 0;
   info.nodes = 0;
+  memset(pos->killer[0], MOVE_NONE, sizeof(pos->killer[0]));
+  memset(pos->killer[1], MOVE_NONE, sizeof(pos->killer[1]));
 
   for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
     info.beg_time = get_time();
