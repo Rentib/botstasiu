@@ -103,6 +103,7 @@ do_move(Position *pos, Move m)
   pos->st = st;
   pos->st->captured = captured;
   pos->game_ply++;
+  pos->ply++;
 
   /* move is a capture */
   if (captured != NONE)
@@ -184,6 +185,8 @@ undo_move(Position *pos, Move m)
   free(pos->st);
   pos->st = st;
   pos->key ^= castleKey[pos->st->castle];
+  pos->game_ply--;
+  pos->ply--;
 
   pos->empty = ~(pos->color[WHITE] | pos->color[BLACK]);
 }

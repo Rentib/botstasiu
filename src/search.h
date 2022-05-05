@@ -16,7 +16,6 @@ typedef struct {
 
 typedef struct {
   uint64_t nodes;
-  int      ply;
   int      beg_time;
   int      end_time;
   int      score;

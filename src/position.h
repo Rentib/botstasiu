@@ -24,7 +24,8 @@ typedef struct {
   PieceType board[64];
   Square    ksq[2];
   Key       key; /* zobrist hash of a position */
-  int       game_ply;
+  int       game_ply; /* ply of game */
+  int       ply;      /* ply of search */
   State    *st;
 } Position;
 

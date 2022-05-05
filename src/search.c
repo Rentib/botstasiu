@@ -57,7 +57,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   pv->cnt = 0;
   PV new_pv;
 
-  if (info.ply >= MAX_PLY) return evaluate(pos);
+  if (pos->ply >= MAX_PLY) return evaluate(pos);
 
   /* dont end search on check */
   if (depth <= 0) {
@@ -73,17 +73,15 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
 
   /* checkmate or stalemate */
   if (move_list == last)
-    return checkers ? info.ply - MATE_VALUE : 0;
+    return checkers ? pos->ply - MATE_VALUE : 0;
 
   sort_moves(move_list, last);
   for (m = move_list; m != last; m++) {
-    info.ply++;
     do_move(pos, *m);
 
     value = -negamax(pos, &new_pv, -beta, -alpha, depth - 1);
 
     undo_move(pos, *m);
-    info.ply--;
     if (value >= beta)
       return beta;
     if (value > alpha) {
@@ -104,8 +102,8 @@ search(Position *pos, int depth)
   int alpha = -INFINITY, beta = INFINITY;
   PV pv;
 
+  pos->ply = 0;
   info.nodes = 0ULL;
-  info.ply = 0;
   info.beg_time = get_time();
   info.score = -negamax(pos, &pv, alpha, beta, depth);
   info.end_time = get_time();
