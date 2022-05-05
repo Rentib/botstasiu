@@ -94,6 +94,10 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
       pv->cnt = new_pv.cnt + 1;
       memcpy(pv->m + 1, new_pv.m, new_pv.cnt * sizeof(Move));
       alpha = value;
+
+      if (pos->board[to_sq(*m)] == NONE) {
+        pos->history[pos->turn][pos->board[from_sq(*m)]][to_sq(*m)] += depth;
+      }
     }
   }
 
@@ -109,8 +113,8 @@ search(Position *pos)
 
   pos->ply = 0;
   info.nodes = 0;
-  memset(pos->killer[0], MOVE_NONE, sizeof(pos->killer[0]));
-  memset(pos->killer[1], MOVE_NONE, sizeof(pos->killer[1]));
+  memset(pos->killer, MOVE_NONE, sizeof(pos->killer));
+  memset(pos->history, 0, sizeof(pos->history));
 
   for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
     info.beg_time = get_time();
