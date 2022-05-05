@@ -27,6 +27,11 @@ typedef struct {
   int       game_ply; /* ply of game */
   int       ply;      /* ply of search */
   State    *st;
+
+  /* killer move <==> quiet move which caused beta cutoff */
+  Move killer[2][MAX_PLY]; /* [index][ply] */
+  /* history move <==> quiet move that improved alpha */
+  Move history[2][6][64];  /* [Color][PieceType][Square] */
 } Position;
 
 void do_move(Position *pos, Move m);

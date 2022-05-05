@@ -5,25 +5,31 @@
 #include "chesslib.h"
 #include "position.h"
 
-#define MAX_PLY    64
-#define INFINITY   50000
-#define MATE_VALUE 49000
-
 typedef struct {
   int  cnt;
   Move m[MAX_PLY];
 } PV;
 
 typedef struct {
-  uint64_t nodes;
-  int      beg_time;
-  int      end_time;
-  int      score;
+  int beg_time;
+  int end_time;
+
+  int depth;
+  int depthset;
+  int timeset;
+
+  int movestogo;
+  int infinite;
+
+  int quit;    /* flag for quitting program */
+  int stopped; /* flag for stopping search */
+
+  uint64_t nodes; /* nodes visited during search */
 } SearchInfo;
 
 extern SearchInfo info;
 
-void perft(Position *pos, int depth);
-void search(Position *pos, int depth);
+void perft(Position *pos);
+void search(Position *pos);
 
 #endif /* __SEARCH_H__ */

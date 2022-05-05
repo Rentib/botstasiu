@@ -82,11 +82,13 @@ uci_go(Position *pos, char *input)
     type = 2;
   if (type)
     depth = atoi(token + 6); /* skip "depth " */
+
+  info.depth = depth;
      
   if (type == 1) {
-    search(pos, depth);
+    search(pos);
   } else if (type == 2) {
-    perft(pos, depth);
+    perft(pos);
   }
 }
 

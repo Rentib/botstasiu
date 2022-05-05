@@ -54,8 +54,8 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
 
-  pv->cnt = 0;
   PV new_pv;
+  pv->cnt = 0;
 
   if (pos->ply >= MAX_PLY) return evaluate(pos);
 
@@ -87,8 +87,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
     if (value > alpha) {
       pv->m[0] = *m;
       pv->cnt = new_pv.cnt + 1;
-      /* we skip * sizeof Move because Move is an int */
-      memcpy(pv->m + 1, new_pv.m, new_pv.cnt);
+      memcpy(pv->m + 1, new_pv.m, new_pv.cnt * sizeof(Move));
       alpha = value;
     }
   }
@@ -97,24 +96,29 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
 }
 
 void
-search(Position *pos, int depth)
+search(Position *pos)
 {
+  int value;
   int alpha = -INFINITY, beta = INFINITY;
   PV pv;
 
   pos->ply = 0;
-  info.nodes = 0ULL;
-  info.beg_time = get_time();
-  info.score = -negamax(pos, &pv, alpha, beta, depth);
-  info.end_time = get_time();
+  info.nodes = 0;
 
-  printf("info depth %d score %d nodes %lu time %d pv",
-         depth, info.score, info.nodes, info.end_time - info.beg_time);
-  for (int i = 0; i < pv.cnt; i++) {
-    printf(" ");
-    print_move(pv.m[i]);
+  for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
+    info.beg_time = get_time();
+    value = -negamax(pos, &pv, alpha, beta, depth);
+    info.end_time = get_time();
+
+    printf("info depth %d score %d nodes %lu time %d pv",
+           depth, value, info.nodes, info.end_time - info.beg_time);
+
+    for (int i = 0; i < pv.cnt; i++) {
+      printf(" ");
+      print_move(pv.m[i]);
+    }
+    printf("\n");
   }
-  printf("\n");
 
   printf("bestmove ");
   print_move(pv.m[0]);
@@ -143,7 +147,7 @@ perft_help(Position *pos, int depth)
 }
 
 void
-perft(Position *pos, int depth)
+perft(Position *pos)
 {
   uint64_t nodes_searched = 0ULL, cnt;
   Move *m, *last, move_list[256];
@@ -152,7 +156,7 @@ perft(Position *pos, int depth)
   for (m = move_list; m != last; m++) {
     if (!is_legal(pos, *m)) continue;
     do_move(pos, *m);
-    cnt = perft_help(pos, depth - 1);
+    cnt = perft_help(pos, info.depth - 1);
     undo_move(pos, *m);
     nodes_searched += cnt;
     print_move(*m);
