@@ -32,12 +32,12 @@ score_move(Position *pos, Move *m)
   switch (type_of(*m)) {
   case NORMAL:
     if (pos->board[to] != NONE) { /* apply mvv-lva */
-      set_score(m, 10000 + mvv[pos->board[to]] - pos->board[from]);
+      set_score(m, 9000 + mvv[pos->board[to]] - pos->board[from]);
     } else {
       if (pos->killer[0][pos->ply] == *m) {
-        set_score(m, 9000 + pos->board[from]);
-      } else if (pos->killer[1][pos->ply] == *m) {
         set_score(m, 8000 + pos->board[from]);
+      } else if (pos->killer[1][pos->ply] == *m) {
+        set_score(m, 7000 + pos->board[from]);
       } else {
         set_score(m, pos->history[pos->turn][pos->board[from]][to]);
       }
@@ -55,12 +55,16 @@ score_move(Position *pos, Move *m)
 }
 
 Move *
-process_moves(Position *pos, Move *move_list, Move *last)
+process_moves(Position *pos, Move *move_list, Move *last, Move pvmove)
 {
   Move *m;
   for (m = move_list; m != last; m++) {
     if (!is_legal(pos, *m)) continue;
-    score_move(pos, m);
+    if (*m == pvmove) {
+      set_score(m, 15000);
+    } else {
+      score_move(pos, m);
+    }
     *move_list++ = *m;
   }
   return move_list;

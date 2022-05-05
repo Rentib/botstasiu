@@ -30,7 +30,7 @@ quiescence(Position *pos, int alpha, int beta)
   info.nodes++;
 
   last = generate_moves(CAPTURES, move_list, pos);
-  last = process_moves(pos, move_list, last);
+  last = process_moves(pos, move_list, last, MOVE_NONE);
 
   sort_moves(move_list, last);
   for (m = move_list; m != last; m++) {
@@ -53,6 +53,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   int ksq = pos->ksq[pos->turn];
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
+  Move hash_move = pv->m[pos->ply];
 
   PV new_pv;
   pv->cnt = 0;
@@ -69,7 +70,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   info.nodes++;
 
   last = generate_moves(ALL, move_list, pos);
-  last = process_moves(pos, move_list, last);
+  last = process_moves(pos, move_list, last, hash_move);
 
   /* checkmate or stalemate */
   if (move_list == last)
