@@ -9,11 +9,42 @@
 #include "position.h"
 #include "search.h"
 
+static int quiescence(Position *pos, int alpha, int beta);
 static int negamax(Position *pos, int alpha, int beta, int depth);
 static uint64_t perft_help(Position *pos, int depth);
 static inline void print_move(Move m);
 
 SearchData data;
+
+static int
+quiescence(Position *pos, int alpha, int beta)
+{
+  int value = evaluate(pos);
+  if (value >= beta)
+    return beta;
+  if (value > alpha)
+    alpha = value;
+
+  Position tmp;
+  Move *m, *last, move_list[256];
+
+  data.nodes++;
+
+  last = generate_moves(CAPTURES, move_list, pos);
+  last = process_moves(pos, move_list, last);
+
+  for (m = move_list; m != last; m++) {
+    tmp = *pos;
+    do_move(&tmp, *m);
+    value = -quiescence(&tmp, -beta, -alpha);
+    if (value >= beta)
+      return beta;
+    if (value > alpha)
+      alpha = value;
+  }
+
+  return alpha;
+}
 
 static int
 negamax(Position *pos, int alpha, int beta, int depth)
@@ -28,7 +59,7 @@ negamax(Position *pos, int alpha, int beta, int depth)
   /* dont end search on check */
   if (depth <= 0) {
     if (!checkers)
-      return evaluate(pos);
+      return quiescence(pos, alpha, beta);
     depth = 1;
   }
 
