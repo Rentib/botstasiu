@@ -10,12 +10,16 @@
 #define MATE_VALUE 49000
 
 typedef struct {
+  int  cnt;
+  Move m[MAX_PLY];
+} PV;
+
+typedef struct {
   uint64_t nodes;
   int      ply;
   int      beg_time;
   int      end_time;
   int      score;
-  Move     best_move;
 } SearchInfo;
 
 extern SearchInfo info;

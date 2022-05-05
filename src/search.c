@@ -10,7 +10,7 @@
 #include "search.h"
 
 static int quiescence(Position *pos, int alpha, int beta);
-static int negamax(Position *pos, int alpha, int beta, int depth);
+static int negamax(Position *pos, PV *pv, int alpha, int beta, int depth);
 static uint64_t perft_help(Position *pos, int depth);
 static inline void print_move(Move m);
 
@@ -47,12 +47,16 @@ quiescence(Position *pos, int alpha, int beta)
 }
 
 static int
-negamax(Position *pos, int alpha, int beta, int depth)
+negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
 {
   int value = -INFINITY;
   int ksq = pos->ksq[pos->turn];
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
+
+  pv->cnt = 0;
+  PV new_pv;
+
   if (info.ply >= MAX_PLY) return evaluate(pos);
 
   /* dont end search on check */
@@ -76,14 +80,17 @@ negamax(Position *pos, int alpha, int beta, int depth)
     info.ply++;
     do_move(pos, *m);
 
-    value = -negamax(pos, -beta, -alpha, depth - 1);
+    value = -negamax(pos, &new_pv, -beta, -alpha, depth - 1);
 
     undo_move(pos, *m);
     info.ply--;
     if (value >= beta)
       return beta;
     if (value > alpha) {
-      if (info.ply == 0) info.best_move = *m;
+      pv->m[0] = *m;
+      pv->cnt = new_pv.cnt + 1;
+      /* we skip * sizeof Move because Move is an int */
+      memcpy(pv->m + 1, new_pv.m, new_pv.cnt);
       alpha = value;
     }
   }
@@ -95,20 +102,24 @@ void
 search(Position *pos, int depth)
 {
   int alpha = -INFINITY, beta = INFINITY;
+  PV pv;
 
   info.nodes = 0ULL;
   info.ply = 0;
-  info.best_move = MOVE_NONE;
   info.beg_time = get_time();
-  info.score = -negamax(pos, alpha, beta, depth);
+  info.score = -negamax(pos, &pv, alpha, beta, depth);
   info.end_time = get_time();
 
-  printf("info depth %d score %d nodes %lu time %d pv ...",
+  printf("info depth %d score %d nodes %lu time %d pv",
          depth, info.score, info.nodes, info.end_time - info.beg_time);
+  for (int i = 0; i < pv.cnt; i++) {
+    printf(" ");
+    print_move(pv.m[i]);
+  }
   printf("\n");
 
   printf("bestmove ");
-  print_move(info.best_move);
+  print_move(pv.m[0]);
   printf("\n");
 }
 
