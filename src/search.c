@@ -33,6 +33,7 @@ quiescence(Position *pos, int alpha, int beta)
   last = generate_moves(CAPTURES, move_list, pos);
   last = process_moves(pos, move_list, last);
 
+  sort_moves(move_list, last);
   for (m = move_list; m != last; m++) {
     tmp = *pos;
     do_move(&tmp, *m);
@@ -72,6 +73,7 @@ negamax(Position *pos, int alpha, int beta, int depth)
   if (move_list == last)
     return checkers ? data.ply - MATE_VALUE : 0;
 
+  sort_moves(move_list, last);
   for (m = move_list; m != last; m++) {
     tmp = *pos;
     do_move(&tmp, *m);
