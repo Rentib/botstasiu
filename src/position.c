@@ -1,7 +1,7 @@
 /* See LICENSE file for file for copyright and license details */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "bitboards.h"
 #include "chesslib.h"
@@ -59,7 +59,7 @@ rem_piece(Position *pos, PieceType pt, Color c, Square sq)
 static inline void
 add_enpas(Position *pos, Square sq)
 {
-  pos->en_passant = sq;
+  pos->st->en_passant = sq;
   pos->key ^= enpasKey[sq & 7]; /* sq & 7 == sq % 7 (file of square) */
 }
 
@@ -67,18 +67,18 @@ add_enpas(Position *pos, Square sq)
 static inline void
 rem_enpas(Position *pos)
 {
-  if (pos->en_passant != SQ_NONE) {
-    pos->key ^= enpasKey[pos->en_passant & 7];
-    pos->en_passant = SQ_NONE;
+  if (pos->st->en_passant != SQ_NONE) {
+    pos->key ^= enpasKey[pos->st->en_passant & 7];
+    pos->st->en_passant = SQ_NONE;
   }
 }
 
 static inline void
 update_castle(Position *pos, Square from, Square to)
 {
-  pos->key ^= castleKey[pos->castle];
-  pos->castle &= (update_castle_rights[from] & update_castle_rights[to]);
-  pos->key ^= castleKey[pos->castle];
+  pos->key ^= castleKey[pos->st->castle];
+  pos->st->castle &= (update_castle_rights[from] & update_castle_rights[to]);
+  pos->key ^= castleKey[pos->st->castle];
 }
 
 static inline void
@@ -91,9 +91,17 @@ switch_turn(Position *pos)
 void
 do_move(Position *pos, Move m)
 {
-  const Color us = pos->turn, them = !us;
-  const Square from = from_sq(m), to = to_sq(m);
-  const PieceType pt = pos->board[from], captured = pos->board[to];
+  Color us = pos->turn, them = !us;
+  Square from = from_sq(m), to = to_sq(m);
+  PieceType pt = pos->board[from], captured = pos->board[to];
+
+  /* move state to the next one */
+  State *st = malloc(sizeof(State));
+  *st = *(pos->st);
+  st->prev = pos->st;
+  pos->st = st;
+  pos->st->captured = captured;
+  pos->game_ply++;
 
   /* move is a capture */
   if (captured != NONE)
@@ -134,6 +142,11 @@ do_move(Position *pos, Move m)
 }
 
 void
+undo_move(Position *pos, Move m)
+{
+}
+
+void
 initialise_zobrist_keys(void)
 {
   turnKey = rand_uint64();
@@ -165,16 +178,20 @@ print_position(const Position *pos)
   }
 	printf("    a   b   c   d   e   f   g   h\n\n");
   printf("    Turn: %s", pos->turn ? "BLACK" : "WHITE");
-  printf("    Enpassant: %s\n", pos->en_passant == SQ_NONE ? "NO" : "YES");
+  printf("    Enpassant: %s\n", pos->st->en_passant == SQ_NONE ? "NO" : "YES");
   printf("    Castling:      %c%c%c%c\n", 
-         pos->castle & 4 ? 'K' : '-', pos->castle & 1 ? 'Q' : '-',
-         pos->castle & 8 ? 'k' : '-', pos->castle & 2 ? 'q' : '-');
+         pos->st->castle & 4 ? 'K' : '-', pos->st->castle & 1 ? 'Q' : '-',
+         pos->st->castle & 8 ? 'k' : '-', pos->st->castle & 2 ? 'q' : '-');
   printf("    Hash key:      %lx\n", pos->key);
 }
 
 void
 set_position(Position *pos, const char *fen)
 {
+  pos->game_ply = 0;
+  pos->st = malloc(sizeof(State));
+  pos->st->prev = NULL;
+  pos->st->captured = NONE;
   pos->color[WHITE] = pos->color[BLACK] = 0ULL;
   for (PieceType pt = PAWN; pt <= KING; pt++)
     pos->piece[pt] = 0ULL;
@@ -182,8 +199,8 @@ set_position(Position *pos, const char *fen)
     pos->board[sq] = NONE;
   pos->turn = WHITE;
   pos->ksq[WHITE] = pos->ksq[BLACK] = SQ_NONE;
-  pos->en_passant = SQ_NONE;
-  pos->castle = 0;
+  pos->st->en_passant = SQ_NONE;
+  pos->st->castle = 0;
   pos->key = 0ULL;
 
   /* board */
@@ -219,14 +236,14 @@ set_position(Position *pos, const char *fen)
   /* castling rights */
   while (*fen != ' ') {
     switch (*fen++) {
-    case 'K': pos->castle |= 4; break;
-    case 'Q': pos->castle |= 1; break;
-    case 'k': pos->castle |= 8; break;
-    case 'q': pos->castle |= 2; break;
+    case 'K': pos->st->castle |= 4; break;
+    case 'Q': pos->st->castle |= 1; break;
+    case 'k': pos->st->castle |= 8; break;
+    case 'q': pos->st->castle |= 2; break;
     default: break;
     }
   }
-  pos->key ^= castleKey[pos->castle];
+  pos->key ^= castleKey[pos->st->castle];
 
   /* en passant */
   if (*(++fen) != '-') {

@@ -16,9 +16,9 @@ typedef struct {
   int      end_time;
   int      score;
   Move     best_move;
-} SearchData;
+} SearchInfo;
 
-extern SearchData data;
+extern SearchInfo info;
 
 void perft(Position *pos, int depth);
 void search(Position *pos, int depth);

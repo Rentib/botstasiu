@@ -66,9 +66,9 @@ generate_pawn_moves(GenType gt,
       *move_list++ = make_move(to - upr, to);
     }
 
-    if (pos->en_passant != SQ_NONE)
-      for (b1 = pawns & pawn_attacks_bb(them, pos->en_passant); b1; )
-        *move_list++ = make_en_passant(pop_lsb(&b1), pos->en_passant);
+    if (pos->st->en_passant != SQ_NONE)
+      for (b1 = pawns & pawn_attacks_bb(them, pos->st->en_passant); b1; )
+        *move_list++ = make_en_passant(pop_lsb(&b1), pos->st->en_passant);
   }
 
   /* promotion moves - quiet and captures */
@@ -111,13 +111,13 @@ generate_castle_moves(Move *move_list, Position *pos)
   Square ksq = pos->ksq[us];
   U64 empty = pos->empty;
 
-  if(pos->castle & (1 << us)) { /* long castle */
+  if(pos->st->castle & (1 << us)) { /* long castle */
     if(get_bit(empty, ksq - 3) && get_bit(empty, ksq - 2) && get_bit(empty, ksq - 1)){
       if(!(attackers_to(pos, ksq - 1, ~empty) & pos->color[them]))
         *move_list++ = make_castle(ksq, ksq - 2);
     }
   }
-  if(pos->castle & (4 << us)) { /* short castle */
+  if(pos->st->castle & (4 << us)) { /* short castle */
     if(get_bit(empty, ksq + 1) && get_bit(empty, ksq + 2)){
       if(!(attackers_to(pos, ksq + 1, ~empty) & pos->color[them]))
         *move_list++ = make_castle(ksq, ksq + 2);

@@ -14,7 +14,7 @@ static int negamax(Position *pos, int alpha, int beta, int depth);
 static uint64_t perft_help(Position *pos, int depth);
 static inline void print_move(Move m);
 
-SearchData data;
+SearchInfo info;
 
 static int
 quiescence(Position *pos, int alpha, int beta)
@@ -28,7 +28,7 @@ quiescence(Position *pos, int alpha, int beta)
   Position tmp;
   Move *m, *last, move_list[256];
 
-  data.nodes++;
+  info.nodes++;
 
   last = generate_moves(CAPTURES, move_list, pos);
   last = process_moves(pos, move_list, last);
@@ -55,7 +55,7 @@ negamax(Position *pos, int alpha, int beta, int depth)
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
   Position tmp; /* used instead of undo move */
-  if (data.ply >= MAX_PLY) return evaluate(pos);
+  if (info.ply >= MAX_PLY) return evaluate(pos);
 
   /* dont end search on check */
   if (depth <= 0) {
@@ -64,28 +64,28 @@ negamax(Position *pos, int alpha, int beta, int depth)
     depth = 1;
   }
 
-  data.nodes++;
+  info.nodes++;
 
   last = generate_moves(ALL, move_list, pos);
   last = process_moves(pos, move_list, last);
 
   /* checkmate or stalemate */
   if (move_list == last)
-    return checkers ? data.ply - MATE_VALUE : 0;
+    return checkers ? info.ply - MATE_VALUE : 0;
 
   sort_moves(move_list, last);
   for (m = move_list; m != last; m++) {
     tmp = *pos;
     do_move(&tmp, *m);
-    data.ply++;
+    info.ply++;
 
     value = -negamax(&tmp, -beta, -alpha, depth - 1);
 
-    data.ply--;
+    info.ply--;
     if (value >= beta)
       return beta;
     if (value > alpha) {
-      if (data.ply == 0) data.best_move = *m;
+      if (info.ply == 0) info.best_move = *m;
       alpha = value;
     }
   }
@@ -98,19 +98,19 @@ search(Position *pos, int depth)
 {
   int alpha = -INFINITY, beta = INFINITY;
 
-  data.nodes = 0ULL;
-  data.ply = 0;
-  data.best_move = MOVE_NONE;
-  data.beg_time = get_time();
-  data.score = -negamax(pos, alpha, beta, depth);
-  data.end_time = get_time();
+  info.nodes = 0ULL;
+  info.ply = 0;
+  info.best_move = MOVE_NONE;
+  info.beg_time = get_time();
+  info.score = -negamax(pos, alpha, beta, depth);
+  info.end_time = get_time();
 
   printf("info depth %d score %d nodes %lu time %d pv ...",
-         depth, data.score, data.nodes, data.end_time - data.beg_time);
+         depth, info.score, info.nodes, info.end_time - info.beg_time);
   printf("\n");
 
   printf("bestmove ");
-  print_move(data.best_move);
+  print_move(info.best_move);
   printf("\n");
 }
 

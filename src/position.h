@@ -7,6 +7,15 @@
 
 typedef uint64_t Key;
 
+typedef struct State State;
+struct State {
+  Square    en_passant;
+  int       castle; /* QqKk (bitfield) */
+  int       fifty_move_rule;
+  PieceType captured;
+  State    *prev;
+};
+
 typedef struct {
   Color     turn;
   U64       color[2];
@@ -14,14 +23,13 @@ typedef struct {
   U64       piece[6];
   PieceType board[64];
   Square    ksq[2];
-  Square    en_passant;
-  int       castle; /* QqKk (bitfield) */
-  int       fifty_move_rule;
-  int       full_move_count;
   Key       key; /* zobrist hash of a position */
+  int       game_ply;
+  State    *st;
 } Position;
 
 void do_move(Position *pos, Move m);
+void undo_move(Position *pos, Move m);
 void initialise_zobrist_keys(void);
 void print_position(const Position *pos);
 void set_position(Position *pos, const char *fen);
