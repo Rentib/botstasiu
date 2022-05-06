@@ -12,6 +12,8 @@
 #include "position.h"
 #include "search.h"
 
+#define ASPIRATION 50
+
 static inline void listen(void);
 static int quiescence(Position *pos, int alpha, int beta);
 static int negamax(Position *pos, PV *pv, int alpha, int beta, int depth);
@@ -199,6 +201,17 @@ search(Position *pos)
 
   for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
     value = negamax(pos, &pv, alpha, beta, depth);
+    if (value < alpha || value > beta) {
+      alpha = -INFINITY;
+      beta  =  INFINITY;
+      depth--;
+      continue;
+    }
+
+    if (depth > 4) {
+      alpha = value - ASPIRATION;
+      beta  = value + ASPIRATION;
+    }
 
     if (info.stopped)
       break;
