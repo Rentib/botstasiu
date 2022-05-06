@@ -27,6 +27,15 @@ static const int update_castle_rights[64] = {
   14, 15, 15, 15, 10, 15, 15, 11,
 };
 
+static const int material_score[] = {
+  [PAWN]   = 100,
+  [KNIGHT] = 300,
+  [BISHOP] = 320,
+  [ROOK]   = 500,
+  [QUEEN]  = 900,
+  [KING]   = -1,
+};
+
 /* Zobrist keys. */
 static Key turnKey;
 static Key pieceKey[2][6][64]; /* [Color][PieceType][Square] */
@@ -109,8 +118,10 @@ do_move(Position *pos, Move m)
   pos->ply++;
 
   /* move is a capture */
-  if (captured != NONE)
+  if (captured != NONE) {
     rem_piece(pos, captured, them, to);
+    pos->material[them] -= material_score[captured];
+  }
 
   rem_piece(pos, pt, us, from);
   add_piece(pos, pt, us, to);
@@ -122,9 +133,11 @@ do_move(Position *pos, Move m)
       add_enpas(pos, to + (us == WHITE ? 8 : -8));
     } else if (type_of(m) == EN_PASSANT) {
       rem_piece(pos, PAWN, them, to + (us == WHITE ? 8 : -8));
+      pos->material[them] -= material_score[PAWN];
     } else if (type_of(m) == PROMOTION) {
       rem_piece(pos, PAWN, us, to);
       add_piece(pos, promotion_type(m), us, to);
+      pos->material[us] += material_score[promotion_type(m)] - material_score[PAWN];
     }
   } else if (type_of(m) == CASTLE) { /* add rook move */
     if (from < to) { /* short */
@@ -162,9 +175,11 @@ undo_move(Position *pos, Move m)
       rem_enpas(pos);
     } else if (type_of(m) == EN_PASSANT) {
       add_piece(pos, PAWN, them, to + (us == WHITE ? 8 : -8));
+      pos->material[them] += material_score[PAWN];
     } else if (type_of(m) == PROMOTION) {
       rem_piece(pos, promotion_type(m), us, to);
       add_piece(pos, PAWN, us, to);
+      pos->material[us] -= material_score[promotion_type(m)] - material_score[PAWN];
     }
   } else if (type_of(m) == CASTLE) {
     if (from < to) {
@@ -179,8 +194,10 @@ undo_move(Position *pos, Move m)
   rem_piece(pos, pt, us, to);
   add_piece(pos, pt, us, from);
 
-  if (captured != NONE)
+  if (captured != NONE) {
     add_piece(pos, captured, them, to);
+    pos->material[them] += material_score[captured];
+  }
 
   State *st = pos->st->prev;
   free(pos->st);
@@ -335,6 +352,12 @@ set_position(Position *pos, const char *fen)
   /* fifty move rule */
 
   pos->tt = tt_new(0x100000 * 2); /* 2 MB */
+
+  pos->material[WHITE] = pos->material[BLACK] = 0;
+  for (PieceType pt = PAWN; pt < KING; pt++)
+    for (Color c = WHITE; c <= BLACK; c++)
+      pos->material[c] += popcount(pos->piece[pt] & pos->color[c]) * material_score[pt];
+
 }
 
 U64

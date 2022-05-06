@@ -5,6 +5,6 @@
 #include "position.h"
 
 void initialise_evaluation(void);
-int evaluate(Position *pos);
+int evaluate(const Position *pos);
 
 #endif /* __EVALUATE_H__ */
