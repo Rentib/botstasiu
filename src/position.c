@@ -102,7 +102,10 @@ do_move(Position *pos, Move m)
   st->prev = pos->st;
   pos->st = st;
   pos->st->captured = captured;
-  pos->game_ply++;
+  pos->st->fifty_move_rule++;
+  if (pt == PAWN || captured != NONE)
+    pos->st->fifty_move_rule = 0;
+  pos->reps[pos->game_ply++] = pos->key;
   pos->ply++;
 
   /* move is a capture */
@@ -139,8 +142,6 @@ do_move(Position *pos, Move m)
     pos->ksq[us] = to;
 
   pos->empty = ~(pos->color[WHITE] | pos->color[BLACK]);
-
-  /* TODO - 50 move rule, full move count */
 }
 
 void
@@ -241,6 +242,7 @@ set_position(Position *pos, const char *fen)
   pos->st = malloc(sizeof(State));
   pos->st->prev = NULL;
   pos->st->captured = NONE;
+  pos->st->fifty_move_rule = 0;
   pos->color[WHITE] = pos->color[BLACK] = 0ULL;
   for (PieceType pt = PAWN; pt <= KING; pt++)
     pos->piece[pt] = 0ULL;
@@ -251,6 +253,7 @@ set_position(Position *pos, const char *fen)
   pos->st->en_passant = SQ_NONE;
   pos->st->castle = 0;
   pos->key = 0ULL;
+  memset(pos->reps, 0, sizeof(pos->reps));
 
   /* board */
   for (Square sq = SQ_A8; sq <= SQ_H1; fen++) {
@@ -303,8 +306,6 @@ set_position(Position *pos, const char *fen)
 
   /* TODO */
   /* fifty move rule */
-
-  /* full move count */
 
   pos->tt = tt_new(0x100000 * 2); /* 2 MB */
 }

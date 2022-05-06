@@ -22,10 +22,11 @@ typedef struct {
   U64       piece[6];
   PieceType board[64];
   Square    ksq[2];
-  int       game_ply; /* ply of game */
-  int       ply;      /* ply of search */
-  Key       key;       /* zobrist hash of a position */
-  TT       *tt;       /* transposition table */
+  int       game_ply;           /* ply of game */
+  int       ply;                /* ply of search */
+  Key       reps[MAX_GAME_PLY]; /* hash key table for detecting reperitions */
+  Key       key;                /* zobrist hash of a position */
+  TT       *tt;                 /* transposition table */
   State    *st;
 
   /* killer move <==> quiet move which caused beta cutoff */

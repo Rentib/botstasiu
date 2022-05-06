@@ -65,6 +65,16 @@ listen(void)
   read_input();
 }
 
+static inline int
+is_rep(Position *pos)
+{
+  int i = pos->game_ply - 1;
+  int n = 1;
+  while (i >= pos->game_ply - pos->st->fifty_move_rule && n < 3)
+    n += (pos->reps[i--] == pos->key);
+  return n >= 3;
+}
+
 static int
 quiescence(Position *pos, int alpha, int beta)
 {
@@ -78,6 +88,8 @@ quiescence(Position *pos, int alpha, int beta)
   Move *m, *last, move_list[256];
 
   if (!(info.nodes++ & 4095)) listen();
+
+  if (is_rep(pos)) return 0; /* 3fold repetition */
 
   last = generate_moves(CAPTURES, move_list, pos);
   last = process_moves(pos, move_list, last, MOVE_NONE);
@@ -122,6 +134,10 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   }
 
   if (!(info.nodes++ & 4095)) listen();
+
+  /* 50 moves with no pawn move / capture or 3fold repetition */
+  if (pos->st->fifty_move_rule >= 50 || is_rep(pos))
+    return 0;
 
   last = generate_moves(ALL, move_list, pos);
   last = process_moves(pos, move_list, last, hash_move);
@@ -172,8 +188,8 @@ search(Position *pos)
   PV pv;
   Move bestmove = MOVE_NONE;
 
-  tt_clear(pos->tt);
   pos->ply = 0;
+  tt_clear(pos->tt);
 
   info.stopped = 0;
   info.nodes = 0;
@@ -187,8 +203,8 @@ search(Position *pos)
     if (info.stopped)
       break;
 
-    printf("info depth %d score cp %d nodes %lu time %d pv",
-           depth, value, info.nodes, get_time() - info.starttime);
+    printf("info depth %d score cp %d nodes %lu pv",
+           depth, value, info.nodes);
 
     bestmove = pv.m[0];
     for (int i = 0; i < pv.cnt; i++) {
@@ -203,7 +219,7 @@ search(Position *pos)
   printf("\n");
 }
 
-U64
+static U64
 perft_help(Position *pos, int depth)
 {
   if (depth == 0) return 1ULL;

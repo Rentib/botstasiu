@@ -4,9 +4,10 @@
 
 #include <inttypes.h>
 
-#define MAX_PLY    64
-#define INFINITY   50000
-#define MATE_VALUE 49000
+#define MAX_GAME_PLY 1024
+#define MAX_PLY      64
+#define INFINITY     50000
+#define MATE_VALUE   49000
 
 typedef uint64_t U64;
 
