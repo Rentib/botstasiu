@@ -53,7 +53,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   int ksq = pos->ksq[pos->turn];
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
-  Move hash_move = pv->m[pos->ply];
+  Move hash_move = MOVE_NONE;
 
   PV new_pv;
   pv->cnt = 0;

@@ -55,12 +55,12 @@ score_move(Position *pos, Move *m)
 }
 
 Move *
-process_moves(Position *pos, Move *move_list, Move *last, Move pvmove)
+process_moves(Position *pos, Move *move_list, Move *last, Move hash_move)
 {
   Move *m;
   for (m = move_list; m != last; m++) {
     if (!is_legal(pos, *m)) continue;
-    if (*m == pvmove) {
+    if (*m == hash_move) {
       set_score(m, 15000);
     } else {
       score_move(pos, m);
