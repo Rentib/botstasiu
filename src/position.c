@@ -302,6 +302,8 @@ set_position(Position *pos, const char *fen)
   /* fifty move rule */
 
   /* full move count */
+
+  pos->tt = tt_new(0x100000 * 2); /* 2 MB */
 }
 
 U64

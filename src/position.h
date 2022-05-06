@@ -4,8 +4,7 @@
 
 #include "bitboards.h"
 #include "chesslib.h"
-
-typedef uint64_t Key;
+#include "tt.h"
 
 typedef struct State State;
 struct State {
@@ -23,9 +22,10 @@ typedef struct {
   U64       piece[6];
   PieceType board[64];
   Square    ksq[2];
-  Key       key; /* zobrist hash of a position */
   int       game_ply; /* ply of game */
   int       ply;      /* ply of search */
+  Key       key;       /* zobrist hash of a position */
+  TT       *tt;       /* transposition table */
   State    *st;
 
   /* killer move <==> quiet move which caused beta cutoff */

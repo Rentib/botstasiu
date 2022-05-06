@@ -164,4 +164,5 @@ uci_loop(void)
     free(pos.st);
     pos.st = xd;
   }
+  tt_delete(pos.tt);
 }
