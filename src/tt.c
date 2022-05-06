@@ -37,8 +37,10 @@ tt_new(int size)
 void
 tt_delete(TT *tt)
 {
-  free(tt->entries);
-  free(tt);
+  if (tt) {
+    free(tt->entries);
+    free(tt);
+  }
 }
 
 void

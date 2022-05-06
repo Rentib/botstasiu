@@ -53,7 +53,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   int ksq = pos->ksq[pos->turn];
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
-  Move hash_move = MOVE_NONE;
+  Move hash_move = tt_probe(pos->tt, pos->key);
 
   PV new_pv;
   pv->cnt = 0;
@@ -91,6 +91,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
       return beta;
     }
     if (value > alpha) {
+      tt_store(pos->tt, pos->key, *m);
       pv->m[0] = *m;
       pv->cnt = new_pv.cnt + 1;
       memcpy(pv->m + 1, new_pv.m, new_pv.cnt * sizeof(Move));

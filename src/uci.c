@@ -126,7 +126,7 @@ uci_position(Position *pos, char *input)
 void
 uci_loop(void)
 {
-  Position pos = (Position){ .st = NULL };
+  Position pos = (Position){ .tt = NULL, .st = NULL };
   set_position(&pos, startpos);
   setbuf(stdin,  NULL);
   setbuf(stdout, NULL);

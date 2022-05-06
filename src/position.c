@@ -185,6 +185,8 @@ undo_move(Position *pos, Move m)
   free(pos->st);
   pos->st = st;
   pos->key ^= castleKey[pos->st->castle];
+  if (pos->st->en_passant != SQ_NONE)
+    add_enpas(pos, pos->st->en_passant);
   pos->game_ply--;
   pos->ply--;
 
@@ -234,6 +236,7 @@ void
 set_position(Position *pos, const char *fen)
 {
   pos->game_ply = 0;
+  tt_delete(pos->tt);
   free(pos->st);
   pos->st = malloc(sizeof(State));
   pos->st->prev = NULL;
