@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "chesslib.h"
 #include "evaluate.h"
@@ -9,6 +12,7 @@
 #include "position.h"
 #include "search.h"
 
+static inline void listen(void);
 static int quiescence(Position *pos, int alpha, int beta);
 static int negamax(Position *pos, PV *pv, int alpha, int beta, int depth);
 static uint64_t perft_help(Position *pos, int depth);
@@ -16,9 +20,55 @@ static inline void print_move(Move m);
 
 SearchInfo info;
 
+// http://home.arcor.de/dreamlike/chess/
+int input_waiting()
+{
+	struct timeval tv;
+	fd_set readfds;
+
+	FD_ZERO (&readfds);
+	FD_SET (fileno(stdin), &readfds);
+	tv.tv_sec=0; tv.tv_usec=0;
+	select(16, &readfds, 0, 0, &tv);
+
+	return (FD_ISSET(fileno(stdin), &readfds));
+}
+
+void read_input() {
+	int bytes;
+	char input[256] = "", *endc;
+
+	if(input_waiting()) {
+		info.stopped = 1;
+		do {
+			bytes=read(fileno(stdin), input, 256);
+		} while (bytes<0);
+		endc = strchr(input, '\n');
+		if (endc)
+			*endc = 0;
+
+		if (strlen(input) > 0) {
+			if (!strncmp(input, "quit", 4))	{
+				info.quit = 1;
+			} else if (!strncmp(input, "stop", 4))
+        info.stopped = 1;
+		}
+		return;
+	}
+}
+
+static inline void
+listen(void)
+{
+  if (info.timeset && get_time() > info.stoptime)
+    info.stopped = 1;
+  read_input();
+}
+
 static int
 quiescence(Position *pos, int alpha, int beta)
 {
+
   int value = evaluate(pos);
   if (value >= beta)
     return beta;
@@ -27,7 +77,7 @@ quiescence(Position *pos, int alpha, int beta)
 
   Move *m, *last, move_list[256];
 
-  info.nodes++;
+  if (!(info.nodes++ & 4095)) listen();
 
   last = generate_moves(CAPTURES, move_list, pos);
   last = process_moves(pos, move_list, last, MOVE_NONE);
@@ -37,6 +87,10 @@ quiescence(Position *pos, int alpha, int beta)
     do_move(pos, *m);
     value = -quiescence(pos, -beta, -alpha);
     undo_move(pos, *m);
+
+    if (info.stopped)
+      return 0;
+
     if (value >= beta)
       return beta;
     if (value > alpha)
@@ -67,7 +121,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
     depth = 1;
   }
 
-  info.nodes++;
+  if (!(info.nodes++ & 4095)) listen();
 
   last = generate_moves(ALL, move_list, pos);
   last = process_moves(pos, move_list, last, hash_move);
@@ -83,6 +137,10 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
     value = -negamax(pos, &new_pv, -beta, -alpha, depth - 1);
 
     undo_move(pos, *m);
+  
+    if (info.stopped)
+      return 0;
+
     if (value >= beta) {
       if (pos->board[to_sq(*m)] == NONE) { /* found killer */
         pos->killer[1][pos->ply] = pos->killer[0][pos->ply];
@@ -112,20 +170,27 @@ search(Position *pos)
   int value;
   int alpha = -INFINITY, beta = INFINITY;
   PV pv;
+  Move bestmove = MOVE_NONE;
 
+  tt_clear(pos->tt);
   pos->ply = 0;
+
+  info.stopped = 0;
   info.nodes = 0;
+
   memset(pos->killer, MOVE_NONE, sizeof(pos->killer));
   memset(pos->history, 0, sizeof(pos->history));
 
   for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
-    info.beg_time = get_time();
-    value = -negamax(pos, &pv, alpha, beta, depth);
-    info.end_time = get_time();
+    value = negamax(pos, &pv, alpha, beta, depth);
 
-    printf("info depth %d score %d nodes %lu time %d pv",
-           depth, value, info.nodes, info.end_time - info.beg_time);
+    if (info.stopped)
+      break;
 
+    printf("info depth %d score cp %d nodes %lu time %d pv",
+           depth, value, info.nodes, get_time() - info.starttime);
+
+    bestmove = pv.m[0];
     for (int i = 0; i < pv.cnt; i++) {
       printf(" ");
       print_move(pv.m[i]);
@@ -134,7 +199,7 @@ search(Position *pos)
   }
 
   printf("bestmove ");
-  print_move(pv.m[0]);
+  print_move(bestmove);
   printf("\n");
 }
 

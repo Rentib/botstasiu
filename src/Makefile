@@ -3,7 +3,7 @@
 .POSIX:
 
 CC = cc
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -Wno-deprecated-declarations -Wno-implicit-fallthrough -Ofast
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -Wno-deprecated-declarations -Wno-implicit-fallthrough -Ofast -D_XOPEN_SOURCE=700
 
 REQ = bitboards evaluate misc movegen moveorder position search tt uci
 

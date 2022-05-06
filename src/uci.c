@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "chesslib.h"
+#include "misc.h"
 #include "movegen.h"
 #include "position.h"
 #include "search.h"
@@ -12,11 +13,11 @@
 #define startpos "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 static Move parse_move(Position *pos, char *move_string);
-static inline void uci_isready(void);
-static inline void uci_ucinewgame(Position *pos);
-static inline void uci_uci(void);
-static void uci_go(Position *pos, char *input);
-static void uci_position(Position *pos, char *input);
+
+static inline void isready(void);
+static inline void uci(void);
+static void go(Position *pos, char *input);
+static void position(Position *pos, char *input);
 
 static Move
 parse_move(Position *pos, char *move_string)
@@ -29,17 +30,12 @@ parse_move(Position *pos, char *move_string)
 
   last = generate_moves(ALL, move_list, pos);
   for (m = move_list; m != last; m++) {
-    if (from != from_sq(*m) || to != to_sq(*m)
-    || !is_legal(pos, *m))
-      continue;
+    if (from != from_sq(*m) || to != to_sq(*m) || !is_legal(pos, *m)) continue;
     if (type_of(*m) == PROMOTION) {
-      if (promotion_type(*m) == KNIGHT && move_string[4] == 'n')
-        return *m;
-      if (promotion_type(*m) == BISHOP && move_string[4] == 'b')
-        return *m;
-      if (promotion_type(*m) ==   ROOK && move_string[4] == 'r')
-        return *m;
-      if (promotion_type(*m) ==  QUEEN && move_string[4] == 'q')
+      if ((promotion_type(*m) == KNIGHT && move_string[4] == 'n')
+      ||  (promotion_type(*m) == BISHOP && move_string[4] == 'b')
+      ||  (promotion_type(*m) ==   ROOK && move_string[4] == 'r')
+      ||  (promotion_type(*m) ==  QUEEN && move_string[4] == 'q')) 
         return *m;
     } else {
       return *m;
@@ -50,50 +46,66 @@ parse_move(Position *pos, char *move_string)
 }
 
 static inline void
-uci_isready(void)
+isready(void)
 {
   printf("readyok\n");
 }
 
 static inline void
-uci_ucinewgame(Position *pos)
+uci(void)
 {
-  set_position(pos, startpos);
-}
-
-static inline void
-uci_uci(void)
-{
-  printf("Botstasiu alpha by Stanisław Bitner\n");
+  printf("id name Botstasiu alpha\n");
+  printf("id author Stanisław Bitner\n");
+  printf("uciok\n");
 }
 
 static void
-uci_go(Position *pos, char *input)
+go(Position *pos, char *input)
 {
-  int depth = -1;
+  int depth = -1, movestogo = 30, movetime = -1;
+  int time = -1, inc = 0;
   char *token = NULL;
-  int type = 0;
 
-  /* input += 3; /1* skip "go " *1/ */
-  /* fixed depth search */
+  info.timeset = 0;
+
+  if ((token = strstr(input, "infinite")))
+    depth = MAX_PLY;
+  if ((token = strstr(input, "winc")) && pos->turn == WHITE)
+    inc = atoi(token + 5);
+  if ((token = strstr(input, "binc")) && pos->turn == BLACK)
+    inc = atoi(token + 5);
+  if ((token = strstr(input, "wtime")) && pos->turn == WHITE)
+    time = atoi(token + 6);
+  if ((token = strstr(input, "btime")) && pos->turn == BLACK)
+    time = atoi(token + 6);
+  if ((token = strstr(input, "movestogo")))
+    movestogo = atoi(token + 10);
+  if ((token = strstr(input, "movetime")))
+    movetime = atoi(token + 9);
   if ((token = strstr(input, "depth")))
-    type = 1;
-  else if ((token = strstr(input, "perft")))
-    type = 2;
-  if (type)
-    depth = atoi(token + 6); /* skip "depth " */
+    depth = atoi(token + 6);
 
-  info.depth = depth;
-     
-  if (type == 1) {
-    search(pos);
-  } else if (type == 2) {
-    perft(pos);
+  info.starttime = get_time();
+
+  info.depth = depth == -1 ? MAX_PLY : depth;
+
+  if (movetime != -1) {
+    time = movetime;
+    movestogo = 1;
   }
+
+  if (time != -1) {
+    info.timeset = 1;
+    time /= movestogo;
+    if (time > 1500) time -= 50;
+    info.stoptime = info.starttime + time + inc;
+  }
+
+  search(pos);
 }
 
 static void
-uci_position(Position *pos, char *input)
+position(Position *pos, char *input)
 {
   char *token;
   input += 9; /* skip "position " */
@@ -128,33 +140,37 @@ uci_loop(void)
 {
   Position pos = (Position){ .tt = NULL, .st = NULL };
   set_position(&pos, startpos);
+
   setbuf(stdin,  NULL);
   setbuf(stdout, NULL);
   char input[6969];
 
-  while (1) {
+  info.quit = 0;
+
+  while (!info.quit) {
     memset(input, 0, sizeof(input));
     fflush(stdout);
 
-    if (!fgets(input, 6969, stdin)
-    ||  input[0] == '\n')
+    if (!fgets(input, 6969, stdin) ||  input[0] == '\n')
       continue;
 
     if (!strncmp(input, "isready", 7))
-      uci_isready();
+      isready();
     else if (!strncmp(input, "ucinewgame", 10))
-      uci_ucinewgame(&pos);
+      position(&pos, "position startpos");
     else if (!strncmp(input, "uci", 3))
-      uci_uci();
+      uci();
     else if (!strncmp(input, "position", 8))
-      uci_position(&pos, input);
+      position(&pos, input);
     else if (!strncmp(input, "go", 2))
-      uci_go(&pos, input);
+      go(&pos, input);
     else if (!strncmp(input, "d", 1))
       print_position(&pos);
+    else if (!strncmp(input, "stop", 4))
+      info.stopped = 1;
     else if (!strncmp(input, "quit", 4)
          ||  !strncmp(input, "q", 1))
-      break;
+      info.quit = 1;
     else
       printf("Unknown command: %s", input);
   }

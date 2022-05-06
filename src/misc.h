@@ -12,4 +12,6 @@ uint64_t rand_uint64(void);
 /* Returns a bitboard with low amount of 1 bits. */
 uint64_t magic_number_candidate(void);
 
+int input_waiting(void);
+
 #endif /* __MISC_H__ */

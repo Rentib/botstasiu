@@ -1,10 +1,6 @@
 /* See LICENSE file for file for copyright and license details */
 #include <stdlib.h>
-#ifdef WIN32
-#include <windows.h>
-#else
 #include <sys/time.h>
-#endif
 
 #include "misc.h"
 
@@ -14,13 +10,9 @@ static uint32_t rand_uint32(void);
 int 
 get_time(void)
 {
-#ifdef WIN32
-  return GetTickCount();
-#else
   struct timeval t;
   gettimeofday(&t, NULL);
   return t.tv_sec * 1000 + t.tv_usec / 1000;
-#endif
 }
 
 uint64_t

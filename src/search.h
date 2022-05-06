@@ -11,15 +11,14 @@ typedef struct {
 } PV;
 
 typedef struct {
-  int beg_time;
-  int end_time;
+  int starttime;
+  int stoptime;
 
   int depth;
   int depthset;
   int timeset;
 
   int movestogo;
-  int infinite;
 
   int quit;    /* flag for quitting program */
   int stopped; /* flag for stopping search */
