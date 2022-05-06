@@ -37,6 +37,8 @@ typedef struct {
 
 void do_move(Position *pos, Move m);
 void undo_move(Position *pos, Move m);
+void do_null_move(Position *pos);
+void undo_null_move(Position *pos);
 void initialise_zobrist_keys(void);
 void print_position(const Position *pos);
 void set_position(Position *pos, const char *fen);

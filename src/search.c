@@ -16,7 +16,7 @@
 
 static inline void listen(void);
 static int quiescence(Position *pos, int alpha, int beta);
-static int negamax(Position *pos, PV *pv, int alpha, int beta, int depth);
+static int negamax(Position *pos, PV *pv, int alpha, int beta, int depth, int cutnode);
 static uint64_t perft_help(Position *pos, int depth);
 static inline void print_move(Move m);
 
@@ -115,13 +115,14 @@ quiescence(Position *pos, int alpha, int beta)
 }
 
 static int
-negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
+negamax(Position *pos, PV *pv, int alpha, int beta, int depth, int cutnode)
 {
   int value = -INFINITY;
   int ksq = pos->ksq[pos->turn];
   U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
   Move *m, *last, move_list[256];
   Move hash_move = tt_probe(pos->tt, pos->key);
+  int is_root = pos->ply == 0;
 
   PV new_pv;
   pv->cnt = 0;
@@ -141,6 +142,16 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   if (pos->st->fifty_move_rule >= 50 || is_rep(pos))
     return 0;
 
+  /* null move prunning */
+  if (cutnode && !is_root && !checkers && depth >= 4 
+  && ((pos->piece[QUEEN] | pos->piece[ROOK]) & pos->color[pos->turn])) {
+    do_null_move(pos);
+    value = -negamax(pos, &new_pv, -beta, -beta + 1, depth - 4, 0);
+    undo_null_move(pos);
+    if (value >= beta)
+      return beta;
+  }
+
   last = generate_moves(ALL, move_list, pos);
   last = process_moves(pos, move_list, last, hash_move);
 
@@ -152,7 +163,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth)
   for (m = move_list; m != last; m++) {
     do_move(pos, *m);
 
-    value = -negamax(pos, &new_pv, -beta, -alpha, depth - 1);
+    value = -negamax(pos, &new_pv, -beta, -alpha, depth - 1, 1);
 
     undo_move(pos, *m);
   
@@ -200,7 +211,7 @@ search(Position *pos)
   memset(pos->history, 0, sizeof(pos->history));
 
   for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
-    value = negamax(pos, &pv, alpha, beta, depth);
+    value = negamax(pos, &pv, alpha, beta, depth, 0);
     if (value < alpha || value > beta) {
       alpha = -INFINITY;
       beta  =  INFINITY;
