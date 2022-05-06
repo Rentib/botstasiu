@@ -2,9 +2,13 @@
 #ifndef __CHESSLIB_H__
 #define __CHESSLIB_H__
 
+#include <inttypes.h>
+
 #define MAX_PLY    64
 #define INFINITY   50000
 #define MATE_VALUE 49000
+
+typedef uint64_t U64;
 
 typedef int File;
 typedef int Rank;

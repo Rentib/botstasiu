@@ -50,3 +50,19 @@ tt_clear(TT *tt)
     et->best = MOVE_NONE;
   }
 }
+
+void
+tt_store(TT *tt, const Key key, const Move m)
+{
+  int index = key & (tt->num - 1);
+  tt->entries[index] = (Entry){ .key = key, .best = m };
+}
+
+Move
+tt_probe(TT *tt, const Key key)
+{
+  int index = key & (tt->num - 1);
+  if (key == tt->entries[index].key)
+    return tt->entries[index].best;
+  return MOVE_NONE;
+}

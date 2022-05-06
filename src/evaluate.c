@@ -1,5 +1,4 @@
 /* See LICENSE file for file for copyright and license details */
-#include "bitboards.h"
 #include "chesslib.h"
 #include "evaluate.h"
 #include "position.h"

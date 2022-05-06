@@ -2,11 +2,7 @@
 #ifndef __BITBOARD_H__
 #define __BITBOARD_H__
 
-#include <inttypes.h>
-
 #include "chesslib.h"
-
-typedef uint64_t U64;
 
 #define get_bit(bitboard, square) (bitboard & (1ULL << (square)))
 #define set_bit(bitboard, square) (bitboard |= (1ULL << (square)))
