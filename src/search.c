@@ -12,7 +12,7 @@
 #include "position.h"
 #include "search.h"
 
-#define ASPIRATION 50
+#define ASPIRATION 30
 
 static inline void listen(void);
 static int quiescence(Position *pos, int alpha, int beta);
@@ -139,7 +139,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth, int cutnode)
   if (!(info.nodes++ & 4095)) listen();
 
   /* 50 moves with no pawn move / capture or 3fold repetition */
-  if (pos->st->fifty_move_rule >= 50 || is_rep(pos))
+  if (pos->st->fifty_move_rule >= 100 || is_rep(pos))
     return 0;
 
   /* null move prunning */
@@ -212,7 +212,7 @@ search(Position *pos)
 
   for (int depth = 1; depth <= info.depth; depth++, info.nodes = 0) {
     value = negamax(pos, &pv, alpha, beta, depth, 0);
-    if (value < alpha || value > beta) {
+    if (value <= alpha || value >= beta) {
       alpha = -INFINITY;
       beta  =  INFINITY;
       depth--;

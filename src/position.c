@@ -214,13 +214,12 @@ undo_move(Position *pos, Move m)
 void
 do_null_move(Position *pos)
 {
+  pos->ply++;
+  pos->reps[pos->game_ply++] = pos->key;
   State *st = malloc(sizeof(State));
   *st = *(pos->st);
   st->prev = pos->st;
   pos->st = st;
-  pos->st->fifty_move_rule++;
-  pos->reps[pos->game_ply++] = pos->key;
-  pos->ply++;
   rem_enpas(pos);
   switch_turn(pos);
 }
@@ -228,14 +227,14 @@ do_null_move(Position *pos)
 void
 undo_null_move(Position *pos)
 {
+  pos->ply--;
+  pos->game_ply--;
   switch_turn(pos);
   State *st = pos->st->prev;
   free(pos->st);
   pos->st = st;
   if (pos->st->en_passant != SQ_NONE)
     add_enpas(pos, pos->st->en_passant);
-  pos->game_ply--;
-  pos->ply--;
 }
 
 void
