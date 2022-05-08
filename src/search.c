@@ -91,8 +91,6 @@ quiescence(Position *pos, int alpha, int beta)
 
   if (!(info.nodes++ & 4095)) listen();
 
-  if (is_rep(pos)) return 0; /* 3fold repetition */
-
   last = generate_moves(CAPTURES, move_list, pos);
   last = process_moves(pos, move_list, last, MOVE_NONE);
 
@@ -117,30 +115,39 @@ quiescence(Position *pos, int alpha, int beta)
 static int
 negamax(Position *pos, PV *pv, int alpha, int beta, int depth, int cutnode)
 {
-  int value = -INFINITY;
-  int ksq = pos->ksq[pos->turn];
-  U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
-  Move *m, *last, move_list[256];
-  Move hash_move = tt_probe(pos->tt, pos->key);
-  int is_root = pos->ply == 0;
-
   PV new_pv;
   pv->cnt = 0;
 
-  if (pos->ply >= MAX_PLY) return evaluate(pos);
+  int value      = -INFINITY;
+  int best_value = -INFINITY;
+  int old_alpha  = alpha;
+  int is_root    = pos->ply == 0;
 
-  /* dont end search on check */
-  if (depth <= 0) {
-    if (!checkers)
-      return quiescence(pos, alpha, beta);
-    depth = 1;
+  Move *m, *last, move_list[256];
+  Move best_move = MOVE_NONE;
+  Move hash_move = MOVE_NONE;
+
+  Square ksq = pos->ksq[pos->turn];
+  U64 checkers = attackers_to(pos, ksq, ~pos->empty) & pos->color[!pos->turn];
+
+
+  if (!is_root) {
+    if (pos->ply >= MAX_PLY)
+      return checkers ? 0 : evaluate(pos);
+
+    /* 50 moves with no pawn move / capture or 3fold repetition */
+    if (pos->st->fifty_move_rule >= 100 || is_rep(pos))
+      return 0;
+
+    /* dont end search if in check */
+    if (depth <= 0) {
+      if (!checkers)
+        return quiescence(pos, alpha, beta);
+      depth = 1;
+    }
   }
 
   if (!(info.nodes++ & 4095)) listen();
-
-  /* 50 moves with no pawn move / capture or 3fold repetition */
-  if (pos->st->fifty_move_rule >= 100 || is_rep(pos))
-    return 0;
 
   /* null move prunning */
   if (cutnode && !is_root && !checkers && depth >= 4 
@@ -152,6 +159,7 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth, int cutnode)
       return beta;
   }
 
+  hash_move = tt_probe(pos->tt, pos->key);
   last = generate_moves(ALL, move_list, pos);
   last = process_moves(pos, move_list, last, hash_move);
 
@@ -178,17 +186,22 @@ negamax(Position *pos, PV *pv, int alpha, int beta, int depth, int cutnode)
       return beta;
     }
     if (value > alpha) {
-      tt_store(pos->tt, pos->key, *m);
       pv->m[0] = *m;
       pv->cnt = new_pv.cnt + 1;
+
       memcpy(pv->m + 1, new_pv.m, new_pv.cnt * sizeof(Move));
       alpha = value;
+      best_value = value;
+      best_move = *m;
 
       if (pos->board[to_sq(*m)] == NONE) {
         pos->history[pos->turn][pos->board[from_sq(*m)]][to_sq(*m)] += depth;
       }
     }
   }
+
+  if (alpha != old_alpha)
+    tt_store(pos->tt, pos->key, best_move);
 
   return alpha;
 }
