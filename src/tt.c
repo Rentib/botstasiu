@@ -1,3 +1,4 @@
+/* See LICENSE file for file for copyright and license details */
 #include <stdlib.h>
 
 #include "chesslib.h"

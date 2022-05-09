@@ -1,3 +1,4 @@
+/* See LICENSE file for file for copyright and license details */
 #ifndef __TT_H__
 #define __TT_H__
 
