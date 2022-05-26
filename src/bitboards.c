@@ -259,6 +259,7 @@ between_bb(Square sq1, Square sq2)
 {
   return between[sq1][sq2];
 }
+
 void
 pretty(U64 bitboard)
 {
